@@ -9,9 +9,14 @@ use App\Http\Requests\ReviewRequest;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Resources\ReviewResource;
 use Auth;
+use App\Exceptions\ReviewNotBelongsToUser;
 
 class ReviewController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api')->except('index', 'show');
+    }
     /**
      * Display a listing of the resource.
      *
@@ -40,11 +45,20 @@ class ReviewController extends Controller
      */
     public function store(ReviewRequest $request, Product $product)
     {
-        $review = new Review($request->all());
+        //dd(Auth::user()->id);
+        $review = new Review;
+        //$review->product_id = $product->id;
+        $review->user_id = Auth::user()->id;
+        $review->review = $request->review;
+        $review->star = $request->star;
 
-        //dd($review);
+
+        //dd(response()->json($review));
+
         $product->reviews()->save($review);
-
+        
+        //return response()->json($review);
+        
         return response([
             'data' => new ReviewResource($review)
         ], Response::HTTP_CREATED);
@@ -79,9 +93,22 @@ class ReviewController extends Controller
      * @param  \App\Review  $review
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Review $review)
+    public function update(Request $request, Product $product, Review $review)
     {
-        //
+        $this->validate($request, [
+            'body' => 'required',
+            'star' => 'required'
+        ]);
+
+        $review->review = $request->body;
+        $review->star = $request->star;
+        $review->save();
+        /*$review->update($request->all());
+        $review->save();*/
+        return response([
+            'data' => new ReviewResource($review)
+        ]);
+        
     }
 
     /**
@@ -90,8 +117,22 @@ class ReviewController extends Controller
      * @param  \App\Review  $review
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Review $review)
+    public function destroy(Product $product, Review $review)
     {
-        //
+        //return $review;
+        $this->ReviewUserCheck($review);
+
+        $review->delete();
+
+        return response(null, Response::HTTP_NO_CONTENT);
+        
+    }
+
+    public function ReviewUserCheck($review)
+    {
+        if(Auth::user()->id !== $review->user_id)
+        {
+            throw new ReviewNotBelongsToUser;
+        }
     }
 }

@@ -26,7 +26,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return ProductCollection::collection(Product::paginate(10));
+        return ProductResource::collection(Product::paginate(10));
 
     }
 
@@ -48,6 +48,7 @@ class ProductController extends Controller
      */
     public function store(ProductRequest $request)
     {
+        //dd(Auth::user()->id);
 
         $product = new Product;
 
@@ -56,6 +57,7 @@ class ProductController extends Controller
         $product->stock = $request->stock;
         $product->price = $request->price;
         $product->discount = $request->discount;
+        $product->user_id = Auth::user()->id;
 
         $product->save();
 
@@ -72,6 +74,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
+        //return new ProductResource::collection($product);
         return new ProductResource($product);
     }
 
